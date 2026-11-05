@@ -60,7 +60,7 @@ resolve_dependencies() {
         done
     done
     for module in "${modules[@]}"; do
-        (cd "$module" && go mod tidy && go mod vendor)
+        (cd "$module" && go mod tidy)
     done
 }
 
@@ -70,10 +70,10 @@ test_core() (
     generic_tags="${tags/,cmfa/}"
     cd "$source_dir/$CORE_PATH"
     export SKIP_CONCURRENT_TEST=1 SKIP_INTEROP_TEST=1
-    go test -mod=mod github.com/metacubex/http/downstreamtests -count=1
+    go test github.com/metacubex/http/downstreamtests -count=1
     # CMFA bypasses IsSafePath. Testing that it also enforces it is rather optimistic.
-    go test -mod=vendor -tags="$generic_tags" '-run=^TestPath$' -count=1 ./constant
-    go test -mod=vendor -tags="$tags" '-skip=^TestPath$' -count=1 "${TEST_PACKAGES[@]}"
+    go test -tags="$generic_tags" '-run=^TestPath$' -count=1 ./constant
+    go test -tags="$tags" '-skip=^TestPath$' -count=1 "${TEST_PACKAGES[@]}"
 )
 
 write_notice() {
@@ -96,7 +96,7 @@ write_notice() {
         --args '{upstream_ref:$ref, upstream_commit:$app_sha, core_commit:$core_sha,
             version_code:$version_code,
             modified_at:$modified_at, build_tags:$ARGS.positional,
-            dependencies_vendored:$dependencies, patches:($hashes | from_entries)}' \
+            dependencies_prepared:$dependencies, patches:($hashes | from_entries)}' \
         "${BUILD_TAGS[@]}" > "$source_dir/DOWNSTREAM.json"
     cat > "$source_dir/DOWNSTREAM.md" <<'EOF'
 # Just CMFA Slim modification notice
@@ -119,8 +119,8 @@ downstream-version-code.txt records the Android versionCode used by Gradle;
 automatic codes count seconds since 2020-01-01 UTC, independently of upstream.
 
 The patched HTTP dependency retains its license under .downstream-deps/http.
-Each Go main module includes vendor in full builds. The corresponding builder,
-patches and instructions are in .downstream-builder.
+Other Go dependencies are resolved from go.mod/go.sum through the module cache.
+The corresponding builder, patches and instructions are in .downstream-builder.
 Original copyright, GPL-3.0 and third-party license notices remain in effect.
 EOF
     mkdir "$builder"

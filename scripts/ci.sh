@@ -44,7 +44,7 @@ source_entries() {
         -o -name '.env*' -o -name '*.keystore' -o -name '*.jks' -o -name '*.log' -o -name '*.pyc' \
         -o -name signing.properties -o -name local.properties -o -name key.properties \
         -o -name .downstream-signing-created \
-        -o \( -name build ! -path '*/vendor/*' ! -path '*/.downstream-deps/*' \) \) \
+        -o \( -name build ! -path '*/.downstream-deps/*' \) \) \
         -prune -o "$@"
 }
 
@@ -53,8 +53,8 @@ archive_source() (
     source_dir="$(realpath "$1")"
     output_dir="$(realpath -m "$2")"
     case "$output_dir/" in "$source_dir/"*) fail 'Release output must be outside the source tree' ;; esac
-    jq -e '.dependencies_vendored == true' "$source_dir/DOWNSTREAM.json" >/dev/null ||
-        fail 'Source archives require vendored dependencies'
+    jq -e '.dependencies_prepared == true' "$source_dir/DOWNSTREAM.json" >/dev/null ||
+        fail 'Source archives require prepared dependencies'
     mkdir -p "$output_dir"
     cd "$source_dir"
     [[ -z "$(source_entries -type l -print -quit)" ]] || fail 'Unexpected link in source archive'
@@ -116,8 +116,8 @@ fixes from JustClash Core Slim are included. See the builder README and
 build-info.json for the complete profile.
 
 APKs: four ABIs and universal. custom-cmfa-source.tar.gz contains the patched
-app, embedded core, vendored Go dependencies and builder. Original licenses
-and attribution are retained.
+app, embedded core, patched HTTP dependency, Go module manifests and builder.
+Original licenses and attribution are retained.
 EOF
     } > "$notes"
     [[ "$channel" != alpha ]] || options=(--prerelease --latest=false)

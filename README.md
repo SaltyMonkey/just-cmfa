@@ -129,11 +129,10 @@ SDK 35, and NDK `29.0.14206865`. Builds use the standard Android environment on
 `ubuntu-latest`, as upstream does; Gradle obtains missing SDK components.
 There are no separate `setup-android`/`sdkmanager` steps, Build Tools/CMake
 overrides, or calls to a separately pinned `apksigner`.
-The APK build sets `GOFLAGS=-mod=readonly` so Go resolves the local `cfa/native`
-entry point through CMFA's module replacements. The `foss` vendor tree does not
-include that entry point. Vendored dependencies are retained for core tests and
-the source archive; APK compilation uses the module cache and may download
-missing dependencies without modifying `go.mod`.
+Go dependencies are resolved through modules, as in upstream. APK compilation
+and our core tests use no vendoring or `GOFLAGS` override. Dependencies follow
+`go.mod` and `go.sum` through the module cache; missing dependencies require
+network access.
 The Go runtime patches come from upstream CMFA and do not restrict TUN.
 An upstream change incompatible with the patches or tools fails CI instead of
 silently skipping changes.
@@ -150,8 +149,9 @@ tests use `SKIP_CONCURRENT_TEST=1`, `SKIP_INTEROP_TEST=1`, and `-count=1`.
 Each release contains APKs for `arm64-v8a`, `armeabi-v7a`, `x86`, `x86_64`, and
 universal, plus `checksums.txt`, `build-info.json`, licenses, and
 `custom-cmfa-source.tar.gz`. The source archive includes the modified app,
-embedded core, vendored dependencies for all three Go modules, and a builder copy
-in `.downstream-builder`. CA certificates are updated before archiving.
+embedded core, patched HTTP dependency, Go module manifests, and a builder copy
+in `.downstream-builder`. Other Go dependencies are downloaded during preparation
+and are not bundled in the archive. CA certificates are updated before archiving.
 GEO data is downloaded by CMFA's original Gradle task.
 Workflows inside the downloaded CMFA source do not run automatically.
 
@@ -167,7 +167,7 @@ Release operations also require `gh`; signing requires `base64` and `iconv`.
 bash scripts/prepare.sh --upstream-ref Prerelease-alpha --patches-only
 ```
 
-Prepare sources, download and vendor dependencies, and run core tests:
+Prepare sources, resolve dependencies, and run core tests:
 
 ```sh
 bash scripts/prepare.sh --upstream-ref v2.11.36 --source-dir output/stable --test
