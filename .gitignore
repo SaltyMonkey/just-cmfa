@@ -1,0 +1,8 @@
+/.work/
+/output/
+.env*
+*.keystore
+*.jks
+signing.properties
+local.properties
+*.log
