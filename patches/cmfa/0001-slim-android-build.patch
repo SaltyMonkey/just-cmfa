@@ -1,0 +1,106 @@
+diff --git a/app/build.gradle.kts b/app/build.gradle.kts
+index 27a8f5b..5272b86 100644
+--- a/app/build.gradle.kts
++++ b/app/build.gradle.kts
+@@ -41,7 +41,6 @@ task("downloadGeoFiles") {
+         "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat" to "geosite.dat",
+         // "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/country.mmdb" to "country.mmdb",
+         "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/GeoLite2-ASN.mmdb" to "ASN.mmdb",
+-        "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/BundleMRS.7z" to "BundleMRS.7z",
+     )
+ 
+     doLast {
+diff --git a/build.gradle.kts b/build.gradle.kts
+index 45f6167..158a46f 100644
+--- a/build.gradle.kts
++++ b/build.gradle.kts
+@@ -102,7 +102,7 @@ subprojects {
+                 isDefault = true
+                 dimension = flavorDimensionList[0]
+                 if (!removeSuffix) {
+-                    versionNameSuffix = ".Alpha"
++                    versionNameSuffix = ".Alpha-slim"
+                 }
+ 
+ 
+@@ -120,7 +120,7 @@ subprojects {
+ 
+                 dimension = flavorDimensionList[0]
+                 if (!removeSuffix) {
+-                    versionNameSuffix = ".Meta"
++                    versionNameSuffix = ".Meta-slim"
+                 }
+ 
+                 buildConfigField("boolean", "PREMIUM", "Boolean.parseBoolean(\"false\")")
+diff --git a/core/build.gradle.kts b/core/build.gradle.kts
+index b0b655f..a71f42a 100644
+--- a/core/build.gradle.kts
++++ b/core/build.gradle.kts
+@@ -14,11 +14,11 @@ val golangSource = file("src/main/golang/native")
+ golang {
+     sourceSets {
+         create("alpha") {
+-            tags.set(listOf("foss","with_gvisor","cmfa"))
++            tags.set(listOf("foss","with_gvisor","cmfa","no_easytier","no_tailscale","no_zerotier","no_trusttunnel","no_hysteria1","no_shadowquic","no_openvpn","no_shadowsocksr","no_debug_http","no_rule_bundle"))
+             srcDir.set(file("src/foss/golang"))
+         }
+         create("meta") {
+-            tags.set(listOf("foss","with_gvisor","cmfa"))
++            tags.set(listOf("foss","with_gvisor","cmfa","no_easytier","no_tailscale","no_zerotier","no_trusttunnel","no_hysteria1","no_shadowquic","no_openvpn","no_shadowsocksr","no_debug_http","no_rule_bundle"))
+             srcDir.set(file("src/foss/golang"))
+         }
+         all {
+diff --git a/core/src/main/cpp/CMakeLists.txt b/core/src/main/cpp/CMakeLists.txt
+index 82f2a82..bbec010 100644
+--- a/core/src/main/cpp/CMakeLists.txt
++++ b/core/src/main/cpp/CMakeLists.txt
+@@ -1,31 +1,10 @@
+ cmake_minimum_required(VERSION 3.0)
+ 
+-# 获取git hash
+-
+-message(STATUS "CMAKE_CURRENT_SOURCE_DIR= ${CMAKE_CURRENT_SOURCE_DIR}")
+-execute_process(
+-  COMMAND git submodule foreach git log -1 --format=%H   
+-  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} 
+-  OUTPUT_VARIABLE COMMIT_HASH
+-)
+-string(REPLACE "\n" ";" COMMIT_HASH "${COMMIT_HASH}")
+-list(GET COMMIT_HASH 1 COMMIT_HASH)
+-string (REGEX REPLACE "[\n\t\r]" "" COMMIT_HASH ${COMMIT_HASH})
+-string(SUBSTRING ${COMMIT_HASH} 0 7 COMMIT_HASH)
+-message(STATUS "git hash= ${COMMIT_HASH}")
+-
+-# 获取分支名称
+-execute_process(
+-  COMMAND git submodule foreach git branch -r --contains ${COMMIT_HASH}
+-  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} 
+-  OUTPUT_VARIABLE CURRENT_BRANCH
+-)
+-string(REPLACE "\n" ";" CURRENT_BRANCH "${CURRENT_BRANCH}")
+-list(GET CURRENT_BRANCH 1 CURRENT_BRANCH)
+-string (REGEX REPLACE "origin/" "" CURRENT_BRANCH ${CURRENT_BRANCH})
+-string (REGEX REPLACE "[\n\t\r]" "" CURRENT_BRANCH ${CURRENT_BRANCH})
+-#string(SUBSTRING ${CURRENT_BRANCH} 0 8 CURRENT_BRANCH)
+-message(STATUS "git current branch = ${CURRENT_BRANCH}")
++# Prepared metadata works in source archives too; Git history is not a build input.
++file(READ "${CMAKE_CURRENT_SOURCE_DIR}/downstream-core-sha.txt" COMMIT_HASH)
++string(STRIP "${COMMIT_HASH}" COMMIT_HASH)
++string(SUBSTRING "${COMMIT_HASH}" 0 7 COMMIT_HASH)
++set(CURRENT_BRANCH "slim")
+ 
+ # 获取生成时间
+ string(TIMESTAMP COMPILE_TIME "%y%m%d")
+diff --git a/core/src/main/golang/native/delegate/init.go b/core/src/main/golang/native/delegate/init.go
+index 9b57bc2..155baf0 100644
+--- a/core/src/main/golang/native/delegate/init.go
++++ b/core/src/main/golang/native/delegate/init.go
+@@ -28,7 +28,7 @@ func Init(home, versionName, gitVersion string, platformVersion int) {
+ 	} else {
+ 		constant.Version = gitVersion
+ 	}
+-	constant.Version = strings.ToLower(constant.Version)
++	constant.Version = strings.TrimSuffix(strings.ToLower(constant.Version), "-slim") + "-slim"
+ 	app.ApplyVersionName(versionName)
+ 	app.ApplyPlatformVersion(platformVersion)
+ 

@@ -1,0 +1,95 @@
+diff --git a/build.gradle.kts b/build.gradle.kts
+--- a/build.gradle.kts
++++ b/build.gradle.kts
+@@ -49,3 +49,3 @@
+                 val customApplicationId = queryConfigProperty("custom.application.id") as? String?
+-                applicationId = customApplicationId.takeIf { it?.isNotBlank() == true } ?: "com.github.metacubex.clash"
++                applicationId = customApplicationId.takeIf { it?.isNotBlank() == true } ?: "com.github.just.clash"
+             }
+@@ -85,2 +85,8 @@
+ 
++        // The display version follows upstream; Android updates use our build time.
++        defaultConfig {
++            versionCode = rootProject.file("downstream-version-code.txt").readText().trim().toInt()
++            resValue("integer", "release_code", "$versionCode")
++        }
++
+         compileSdkVersion(defaultConfig.targetSdk!!)
+@@ -110,4 +116,4 @@
+ 
+-                resValue("string", "launch_name", "@string/launch_name_alpha")
+-                resValue("string", "application_name", "@string/application_name_alpha")
++                resValue("string", "launch_name", "Just CMFA Slim Alpha")
++                resValue("string", "application_name", "Just Clash Meta for Android Slim Alpha")
+ 
+@@ -127,4 +133,4 @@
+ 
+-                resValue("string", "launch_name", "@string/launch_name_meta")
+-                resValue("string", "application_name", "@string/application_name_meta")
++                resValue("string", "launch_name", "Just CMFA Slim")
++                resValue("string", "application_name", "Just Clash Meta for Android Slim")
+ 
+diff --git a/app/src/main/AndroidManifest.xml b/app/src/main/AndroidManifest.xml
+--- a/app/src/main/AndroidManifest.xml
++++ b/app/src/main/AndroidManifest.xml
+@@ -90,14 +90,2 @@
+             </intent-filter>
+-            <intent-filter>
+-                <action android:name="com.github.metacubex.clash.meta.action.START_CLASH" />
+-                <category android:name="android.intent.category.DEFAULT" />
+-            </intent-filter>
+-            <intent-filter>
+-                <action android:name="com.github.metacubex.clash.meta.action.STOP_CLASH" />
+-                <category android:name="android.intent.category.DEFAULT" />
+-            </intent-filter>
+-            <intent-filter>
+-                <action android:name="com.github.metacubex.clash.meta.action.TOGGLE_CLASH" />
+-                <category android:name="android.intent.category.DEFAULT" />
+-            </intent-filter>
+         </activity>
+diff --git a/app/src/alpha/AndroidManifest.xml b/app/src/alpha/AndroidManifest.xml
+new file mode 100644
+--- /dev/null
++++ b/app/src/alpha/AndroidManifest.xml
+@@ -0,0 +1,18 @@
++<manifest xmlns:android="http://schemas.android.com/apk/res/android">
++    <application>
++        <activity android:name=".ExternalControlActivity">
++            <intent-filter>
++                <action android:name="com.github.just.clash.alpha.action.START_CLASH" />
++                <category android:name="android.intent.category.DEFAULT" />
++            </intent-filter>
++            <intent-filter>
++                <action android:name="com.github.just.clash.alpha.action.STOP_CLASH" />
++                <category android:name="android.intent.category.DEFAULT" />
++            </intent-filter>
++            <intent-filter>
++                <action android:name="com.github.just.clash.alpha.action.TOGGLE_CLASH" />
++                <category android:name="android.intent.category.DEFAULT" />
++            </intent-filter>
++        </activity>
++    </application>
++</manifest>
+diff --git a/app/src/meta/AndroidManifest.xml b/app/src/meta/AndroidManifest.xml
+new file mode 100644
+--- /dev/null
++++ b/app/src/meta/AndroidManifest.xml
+@@ -0,0 +1,18 @@
++<manifest xmlns:android="http://schemas.android.com/apk/res/android">
++    <application>
++        <activity android:name=".ExternalControlActivity">
++            <intent-filter>
++                <action android:name="com.github.just.clash.meta.action.START_CLASH" />
++                <category android:name="android.intent.category.DEFAULT" />
++            </intent-filter>
++            <intent-filter>
++                <action android:name="com.github.just.clash.meta.action.STOP_CLASH" />
++                <category android:name="android.intent.category.DEFAULT" />
++            </intent-filter>
++            <intent-filter>
++                <action android:name="com.github.just.clash.meta.action.TOGGLE_CLASH" />
++                <category android:name="android.intent.category.DEFAULT" />
++            </intent-filter>
++        </activity>
++    </application>
++</manifest>
