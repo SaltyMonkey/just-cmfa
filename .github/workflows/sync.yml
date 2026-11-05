@@ -1,0 +1,56 @@
+name: Sync upstream builds
+
+on:
+  schedule:
+    - cron: "0 1 * * *"
+  workflow_dispatch:
+    inputs:
+      channel:
+        description: Channel to check
+        type: choice
+        options: [both, alpha, stable]
+        default: both
+      force:
+        description: Rebuild even if app, core and builder revisions are unchanged
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: upstream-sync
+  cancel-in-progress: false
+
+jobs:
+  detect:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.detect.outputs.matrix }}
+      changed: ${{ steps.detect.outputs.changed }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - name: Detect app and pinned core revisions
+        id: detect
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CHANNEL: ${{ inputs.channel || 'both' }}
+          FORCE: ${{ inputs.force || false }}
+        run: bash scripts/ci.sh detect
+
+  build:
+    needs: detect
+    if: needs.detect.outputs.changed == 'true'
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.detect.outputs.matrix) }}
+    uses: ./.github/workflows/build.yml
+    with:
+      channel: ${{ matrix.channel }}
+      upstream_ref: ${{ matrix.ref }}
+      upstream_sha: ${{ matrix.sha }}
+      core_sha: ${{ matrix.core_sha }}
+      release_tag: ${{ matrix.tag }}
+    secrets: inherit

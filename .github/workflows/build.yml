@@ -1,0 +1,137 @@
+name: Build Android APKs
+
+on:
+  workflow_call:
+    inputs:
+      channel:
+        required: true
+        type: string
+      upstream_ref:
+        required: true
+        type: string
+      upstream_sha:
+        required: true
+        type: string
+      core_sha:
+        required: true
+        type: string
+      release_tag:
+        required: true
+        type: string
+    secrets:
+      CMFA_KEYSTORE_BASE64:
+        required: true
+      CMFA_STORE_PASSWORD:
+        required: true
+      CMFA_KEY_ALIAS:
+        required: true
+      CMFA_KEY_PASSWORD:
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      CHANNEL: ${{ inputs.channel }}
+      UPSTREAM_REF: ${{ inputs.upstream_ref }}
+      UPSTREAM_SHA: ${{ inputs.upstream_sha }}
+      CORE_SHA: ${{ inputs.core_sha }}
+      RELEASE_TAG: ${{ inputs.release_tag }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: gradle/actions/setup-gradle@v5
+
+      # CMFA's Go fork and Android runtime fixes are retained from upstream CI.
+      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c
+        with:
+          go-download-base-url: https://github.com/MetaCubeX/go/releases/download/build
+          go-version: '1.26'
+          cache: false
+
+      - uses: actions/cache@v5
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-cmfa-go-1.26-${{ inputs.core_sha }}-${{ hashFiles('patches/**') }}
+          restore-keys: |
+            ${{ runner.os }}-cmfa-go-1.26-
+
+      - name: Prepare pinned source and test patched packages
+        run: |
+          bash scripts/prepare.sh \
+            --upstream-ref "$UPSTREAM_REF" \
+            --expected-sha "$UPSTREAM_SHA" \
+            --expected-core-sha "$CORE_SHA" \
+            --test
+
+      - name: Apply upstream Android Go runtime fixes
+        shell: bash
+        run: |
+          set -euo pipefail
+          for patch_file in "$GITHUB_WORKSPACE"/output/source/.github/patch/*.patch; do
+            git -C "$(go env GOROOT)" apply --check "$patch_file"
+            git -C "$(go env GOROOT)" apply "$patch_file"
+          done
+
+      - name: Update embedded CA bundle
+        run: |
+          sudo update-ca-certificates
+          cp /etc/ssl/certs/ca-certificates.crt output/source/core/src/foss/golang/clash/component/ca/ca-certificates.crt
+
+      - name: Archive corresponding source before signing
+        run: bash scripts/ci.sh archive
+
+      - name: Configure APK signing
+        env:
+          CMFA_KEYSTORE_BASE64: ${{ secrets.CMFA_KEYSTORE_BASE64 }}
+          CMFA_STORE_PASSWORD: ${{ secrets.CMFA_STORE_PASSWORD }}
+          CMFA_KEY_ALIAS: ${{ secrets.CMFA_KEY_ALIAS }}
+          CMFA_KEY_PASSWORD: ${{ secrets.CMFA_KEY_PASSWORD }}
+        run: bash scripts/signing.sh --source-dir output/source
+
+      - name: Build all Android ABIs and universal APK
+        working-directory: output/source
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x gradlew
+          if [[ "$CHANNEL" == alpha ]]; then
+            ./gradlew --no-daemon app:assembleAlphaRelease
+          elif [[ "$CHANNEL" == stable ]]; then
+            ./gradlew --no-daemon app:assembleMetaRelease
+          else
+            echo 'Unsupported channel' >&2
+            exit 2
+          fi
+
+      - name: Remove generated signing files
+        if: always()
+        run: bash scripts/signing.sh --source-dir output/source --clean
+
+      - name: Collect release assets
+        run: bash scripts/ci.sh collect --channel "$CHANNEL"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: just-cmfa-${{ inputs.channel }}
+          path: output/release/*
+          if-no-files-found: error
+          compression-level: 0
+
+      - name: Publish completed build
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/ci.sh publish --channel "$CHANNEL" --tag "$RELEASE_TAG"
