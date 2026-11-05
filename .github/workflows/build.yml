@@ -105,6 +105,9 @@ jobs:
       - name: Build all Android ABIs and universal APK
         working-directory: output/source
         shell: bash
+        env:
+          # foss/vendor omits the cfa/native entry point. Resolve the local module instead.
+          GOFLAGS: -mod=readonly
         run: |
           set -euo pipefail
           chmod +x gradlew

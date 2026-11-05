@@ -129,6 +129,11 @@ SDK 35, and NDK `29.0.14206865`. Builds use the standard Android environment on
 `ubuntu-latest`, as upstream does; Gradle obtains missing SDK components.
 There are no separate `setup-android`/`sdkmanager` steps, Build Tools/CMake
 overrides, or calls to a separately pinned `apksigner`.
+The APK build sets `GOFLAGS=-mod=readonly` so Go resolves the local `cfa/native`
+entry point through CMFA's module replacements. The `foss` vendor tree does not
+include that entry point. Vendored dependencies are retained for core tests and
+the source archive; APK compilation uses the module cache and may download
+missing dependencies without modifying `go.mod`.
 The Go runtime patches come from upstream CMFA and do not restrict TUN.
 An upstream change incompatible with the patches or tools fails CI instead of
 silently skipping changes.
