@@ -12,8 +12,9 @@ BUILD_TAGS=(
 TEST_PACKAGES=(
     ./adapter/outbound ./adapter/outboundgroup ./adapter/provider ./common/convert
     ./component/fakeip ./component/profile/cachefile ./component/resource
-    ./component/nat ./config ./constant ./hub/route ./listener/inbound
-    ./listener/tproxy ./rules/bundle ./transport/xhttp ./tunnel
+    ./component/nat ./component/cidr ./component/trie ./config ./constant
+    ./hub/route ./listener/inbound ./listener/tproxy ./rules/bundle
+    ./rules/provider ./transport/xhttp ./tunnel
 )
 ABIS=(arm64-v8a armeabi-v7a x86_64 x86 universal)
 

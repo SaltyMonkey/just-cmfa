@@ -32,9 +32,8 @@ Providers skip nodes using disabled protocols and log a warning. An update with
 no usable nodes fails and preserves the previous list. An explicitly configured
 unsupported outbound remains a configuration error.
 
-Other changes inherited from [JustClash Core Slim](https://github.com/SaltyMonkey/justclash-core-slim):
+Other changes, including patches from [JustClash Core Slim](https://github.com/SaltyMonkey/justclash-core-slim):
 
-- uTLS is pinned to the `v1.9.0-mod-meta` branch revision specified in patch `0003`.
 - SOCKS5 supports `resolve-destination: true` for local TCP destination resolution.
 - `load-balance` groups support `strategy: least-connections`.
 - Atomic fake IP persistence and fixes for URL-test and XHTTP.
@@ -45,9 +44,12 @@ Other changes inherited from [JustClash Core Slim](https://github.com/SaltyMonke
   resources are exhausted.
 - A 32 KiB limit on temporary HTTP/2 send buffers in both HTTP client implementations.
   The dependency replacement is applied to all three CMFA Go modules.
+- Fewer temporary allocations when decoding MRS domain/IP rules and
+  single-threaded zstd decoding.
 
 Patch numbering is preserved for comparison with the reference project.
-Its `patches/unfinished` directory and benchmarks are excluded.
+Its `patches/unfinished` directory and benchmarks are excluded; patch `0026`
+retains the benchmarks from its pinned upstream PR.
 Application and core versions receive a Slim suffix.
 
 As in upstream CMFA, the core is a pinned revision from mihomo's `Alpha` branch.
@@ -139,7 +141,7 @@ silently skipping changes.
 
 The original `constant.TestPath` runs separately without the `cmfa` tag:
 Android mode deliberately bypasses the path restriction that this test expects.
-All tests in the 16 patched packages of the main core module run with the full
+All tests in the 19 patched packages of the main core module run with the full
 Android/Slim tag set, including both upstream tests and tests added by patches.
 The package list is `TEST_PACKAGES` in `scripts/common.sh`; update it when adding
 a patch affecting another package. The HTTP/2 patch has a separate test command.
