@@ -65,11 +65,14 @@ resolve_dependencies() {
 }
 
 test_core() (
-    local source_dir="$1" tags generic_tags
+    local source_dir="$1" tags generic_tags http_module
     tags="$(IFS=,; printf '%s' "${BUILD_TAGS[*]}")"
     generic_tags="${tags/,cmfa/}"
     cd "$source_dir/$CORE_PATH"
     export SKIP_CONCURRENT_TEST=1 SKIP_INTEROP_TEST=1
+    http_module="$(tr -d '\r\n' < "$ROOT/patches/http/module")"
+    go test "$http_module" "$http_module/http2" -count=1 \
+        '-run=^(TestTransportClosedHTTP2ConnNotHeldByTimers|TestHTTP2IdleTimerAfterStreamCompletion|TestClientConnIdleTimerAfterStreamCompletion)$'
     go test github.com/metacubex/http/downstreamtests -count=1
     # CMFA bypasses IsSafePath. Testing that it also enforces it is rather optimistic.
     go test -tags="$generic_tags" '-run=^TestPath$' -count=1 ./constant

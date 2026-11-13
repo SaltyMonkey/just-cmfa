@@ -37,6 +37,8 @@ Other changes, including patches from [JustClash Core Slim](https://github.com/S
 - SOCKS5 supports `resolve-destination: true` for local TCP destination resolution.
 - `load-balance` groups support `strategy: least-connections`.
 - Atomic fake IP persistence and fixes for URL-test and XHTTP.
+- Fallback groups select the first alive proxy when the saved selection is absent,
+  while preserving that selection for when its provider returns.
 - The correct `custom-certificates` configuration key.
 - HTTP controller limits, a correct initial `/memory` response, and cancellation
   of delay checks when their API requests are cancelled.
@@ -44,6 +46,8 @@ Other changes, including patches from [JustClash Core Slim](https://github.com/S
   resources are exhausted.
 - A 32 KiB limit on temporary HTTP/2 send buffers in both HTTP client implementations.
   The dependency replacement is applied to all three CMFA Go modules.
+- Closed HTTP/2 connections stop their idle and health-check timers so those timers
+  do not retain connection buffers.
 - Fewer temporary allocations when decoding MRS domain/IP rules and
   single-threaded zstd decoding.
 
