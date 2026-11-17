@@ -37,6 +37,12 @@ Other changes, including patches from [JustClash Core Slim](https://github.com/S
 - SOCKS5 supports `resolve-destination: true` for local TCP destination resolution.
 - `load-balance` groups support `strategy: least-connections`.
 - Atomic fake IP persistence and fixes for URL-test and XHTTP.
+- REALITY advertises client version `26.11.9` instead of `1.8.2` for testing
+  server-side `minVer` checks. Only the advertised version changes; this does not
+  provide full feature compatibility with Xray `26.11.9`. ML-DSA-65 certificate
+  verification (`mldsa65Verify`) is not implemented. Passing the version check
+  does not add that verification or guarantee a successful connection with the
+  server's configuration.
 - Fallback groups select the first alive proxy when the saved selection is absent,
   while preserving that selection for when its provider returns.
 - The correct `custom-certificates` configuration key.
